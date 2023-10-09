@@ -1,5 +1,5 @@
-import { FiniteStateMachine } from '../classes/finite-state-machine';
-import { Converters, Transitions } from '../types';
+import { FiniteStateMachine } from '../classes/finite-state-machine'
+import { Converters, Transitions } from '../types'
 
 export enum States {
     Age = 'age',
@@ -13,10 +13,10 @@ type Data = {
     firstName? : string;
     isAllowed? : boolean;
     lastName?  : string;
-};
+}
 
 function isAdult(age?: number) {
-    return !!age && age >= 18;
+    return !!age && age >= 18
 }
 
 const transitions: Transitions<States, Data> = {
@@ -24,15 +24,15 @@ const transitions: Transitions<States, Data> = {
     isAllowed : (data) => (data.isAllowed ? States.FirstName : undefined),
     firstName : (_data) => States.LastName,
     lastName  : (_data) => undefined,
-};
+}
 
 const converters: Converters<States, Data> = {
     age       : (age: number, data) => ({ ...data, isAllowed: isAdult(age), age }),
     isAllowed : (isAllowed: boolean, data) => ({ ...data, isAllowed }),
     firstName : (firstName: string, data) => ({ ...data, firstName }),
     lastName  : (lastName: string, data) => ({ ...data, lastName }),
-};
+}
 
 export function makeMockedFSM() {
-    return new FiniteStateMachine(States.Age, {}, transitions, converters);
+    return new FiniteStateMachine(States.Age, {}, transitions, converters)
 }
