@@ -39,8 +39,8 @@ export class FiniteStateMachine<States extends string, Data> {
     };
 
     private readonly transit = () => {
-        const transition = this.transitions[this.state];
-        const state = transition(this.storedData);
+        const transition = this.transitions[this.state],
+              state = transition(this.storedData);
 
         if (state && state !== this.state) {
             this.dllNav.insert({ data: {}, state }, () => 0, this.current);
