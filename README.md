@@ -24,7 +24,7 @@ npm install @romainfieve/finite-state-machine
 ## Usage
 
 ```typescript
-const isAdult = (age?: number) => !!age && age >= 18;
+const isAdult = (age?: number) => !!age && age >= 18
 
 enum States {
     Age = 'age',
@@ -34,33 +34,38 @@ enum States {
 }
 
 type Data = {
-    age?: number;
-    firstName?: string;
-    isAllowed?: boolean;
-    lastName?: string;
-};
+    age?: number
+    firstName?: string
+    isAllowed?: boolean
+    lastName?: string
+}
 
 const transitions: Transitions<States, Data> = {
     age: (data) => (isAdult(data.age) ? States.FirstName : States.IsAllowed),
     isAllowed: (data) => (data.isAllowed ? States.FirstName : undefined),
     firstName: (_data) => States.LastName,
     lastName: (_data) => undefined,
-};
+}
 
 const converters: Converters<States, Data> = {
     age: (age: number, data) => ({ ...data, isAllowed: isAdult(age), age }),
     isAllowed: (isAllowed: boolean, data) => ({ ...data, isAllowed }),
     firstName: (firstName: string, data) => ({ ...data, firstName }),
     lastName: (lastName: string, data) => ({ ...data, lastName }),
-};
+}
 
-const fsm = new FiniteStateMachine(States.Age, {}, transitions, converters)
+const fsm = new FiniteStateMachine({
+    initialState: States.Age,
+    initialData: {},
+    transitions,
+    converters,
+})
     .set(18)
     .set('John')
-    .set('Doe');
+    .set('Doe')
 
-const state = fsm.state; // 'lastName'
-const data = fsm.data; // { lastName: 'Doe', firstName: 'John', age: 18, isAllowed: true }
+const state = fsm.state // 'lastName'
+const data = fsm.data // { lastName: 'Doe', firstName: 'John', age: 18, isAllowed: true }
 ```
 
 ---
