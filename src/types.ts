@@ -10,14 +10,8 @@ export type Converters<States extends string, Data> = Record<
 >
 
 export type MachineDefinition<States extends string, Data> = {
-    data        : Data;
-    transitions : Transitions<States, Data>;
-}
-
-type GetFirstArgument<T> = T extends (first: infer FirstArgument, ...args: unknown[]) => unknown
-    ? FirstArgument
-    : never
-
-export type ConvertersInputs<T> = {
-    [Properties in keyof T]: GetFirstArgument<T[Properties]>
+    converters   : Converters<States, Data>;
+    initialData  : Partial<Data>;
+    initialState : States;
+    transitions  : Transitions<States, Data>;
 }

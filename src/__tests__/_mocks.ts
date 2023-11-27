@@ -34,5 +34,10 @@ const converters: Converters<States, Data> = {
 }
 
 export function makeMockedFSM() {
-    return new FiniteStateMachine(States.Age, {}, transitions, converters)
+    return new FiniteStateMachine({
+        initialState : States.Age,
+        initialData  : {},
+        transitions,
+        converters,
+    })
 }

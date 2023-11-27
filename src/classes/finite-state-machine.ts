@@ -1,7 +1,7 @@
 import { DLLNode } from '@romainfieve/doubly-linked-list'
 import { DoublyLinkedListNavigator } from '@romainfieve/doubly-linked-list-navigator'
 
-import { Converters, Transitions } from '../types'
+import { Converters, MachineDefinition, Transitions } from '../types'
 
 export class FiniteStateMachine<States extends string, Data> {
     private dllNav!      : DoublyLinkedListNavigator<{ data: Partial<Data>; state: States }>
@@ -9,12 +9,12 @@ export class FiniteStateMachine<States extends string, Data> {
     private transitions! : Transitions<States, Data>
     private converters!  : Converters<States, Data>
 
-    constructor(
-        initialState: States,
-        initialData = {} as Partial<Data>,
-        transitions: Transitions<States, Data>,
-        converters: Converters<States, Data>
-    ) {
+    constructor({
+        initialState,
+        initialData = {},
+        transitions,
+        converters,
+    }: MachineDefinition<States, Data>) {
         this.dllNav = new DoublyLinkedListNavigator([{ data: initialData, state: initialState }])
         this.storedData = initialData
         this.transitions = transitions
