@@ -27,10 +27,10 @@ const transitions: Transitions<States, Data> = {
 }
 
 const converters: Converters<States, Data> = {
-    age       : (age: number, data) => ({ ...data, isAllowed: isAdult(age), age }),
-    isAllowed : (isAllowed: boolean, data) => ({ ...data, isAllowed }),
-    firstName : (firstName: string, data) => ({ ...data, firstName }),
-    lastName  : (lastName: string, data) => ({ ...data, lastName }),
+    age       : (age: number, _data) => ({ isAllowed: isAdult(age), age }),
+    isAllowed : (isAllowed: boolean, _data) => ({ isAllowed }),
+    firstName : (firstName: string, _data) => ({ firstName }),
+    lastName  : (lastName: string, _data) => ({ lastName }),
 }
 
 export function makeMockedFSM() {
