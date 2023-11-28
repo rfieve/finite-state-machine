@@ -9,14 +9,18 @@ describe('FiniteStateMachine', () => {
 
     it('should transit correctly', () => {
         expect(fsm.state).toBe(States.Age)
+        expect(fsm.asMachineDefinition.initialState).toBe(States.Age)
         expect(fsm.current.data).toEqual({ data: {}, state: States.Age })
         expect(fsm.data).toEqual({})
+        expect(fsm.asMachineDefinition.initialData).toEqual({})
         expect(fsm.nodes).toEqual([{ data: {}, state: States.Age }])
 
         fsm.set(18)
         expect(fsm.state).toBe(States.FirstName)
+        expect(fsm.asMachineDefinition.initialState).toBe(States.FirstName)
         expect(fsm.current.data).toEqual({ data: {}, state: States.FirstName })
         expect(fsm.data).toEqual({ age: 18, isAllowed: true })
+        expect(fsm.asMachineDefinition.initialData).toEqual({ age: 18, isAllowed: true })
         expect(fsm.nodes).toEqual([
             { data: { age: 18, isAllowed: true }, state: States.Age },
             { data: {}, state: States.FirstName },
@@ -24,8 +28,14 @@ describe('FiniteStateMachine', () => {
 
         fsm.set('John')
         expect(fsm.state).toBe(States.LastName)
+        expect(fsm.asMachineDefinition.initialState).toBe(States.LastName)
         expect(fsm.current.data).toEqual({ data: {}, state: States.LastName })
         expect(fsm.data).toEqual({ firstName: 'John', age: 18, isAllowed: true })
+        expect(fsm.asMachineDefinition.initialData).toEqual({
+            firstName : 'John',
+            age       : 18,
+            isAllowed : true,
+        })
         expect(fsm.nodes).toEqual([
             { data: { age: 18, isAllowed: true }, state: States.Age },
             { data: { firstName: 'John' }, state: States.FirstName },
@@ -34,8 +44,15 @@ describe('FiniteStateMachine', () => {
 
         fsm.set('Doe')
         expect(fsm.state).toBe(States.LastName)
+        expect(fsm.asMachineDefinition.initialState).toBe(States.LastName)
         expect(fsm.current.data).toEqual({ data: { lastName: 'Doe' }, state: States.LastName })
         expect(fsm.data).toEqual({ lastName: 'Doe', firstName: 'John', age: 18, isAllowed: true })
+        expect(fsm.asMachineDefinition.initialData).toEqual({
+            lastName  : 'Doe',
+            firstName : 'John',
+            age       : 18,
+            isAllowed : true,
+        })
         expect(fsm.nodes).toEqual([
             { data: { age: 18, isAllowed: true }, state: States.Age },
             { data: { firstName: 'John' }, state: States.FirstName },
