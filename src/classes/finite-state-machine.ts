@@ -37,6 +37,15 @@ export class FiniteStateMachine<States extends string, Data> {
         return this.storedData
     }
 
+    public get asMachineDefinition() {
+        return {
+            initialData  : this.storedData,
+            initialState : this.dllNav.current?.data.state,
+            transitions  : this.transitions,
+            converters   : this.converters,
+        } as MachineDefinition<States, Data>
+    }
+
     public readonly set = <Input>(input: Input) => {
         const converted = this.converters[this.state](input, this.storedData)
         return this.setDataOnCurrent(converted).setData(converted).transit()
