@@ -25,6 +25,10 @@ export class FiniteStateMachine<States extends string, Data> {
         return this.dllNav.current as DLLNode<{ data: Partial<Data>; state: States }>
     }
 
+    public get nodes() {
+        return this.dllNav.toArrayInOrder()
+    }
+
     public get state() {
         return this.current.data.state
     }
