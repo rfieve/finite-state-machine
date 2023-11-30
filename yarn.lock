@@ -739,10 +739,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@romainfieve/doubly-linked-list-navigator@^1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@romainfieve/doubly-linked-list-navigator/-/doubly-linked-list-navigator-1.0.4.tgz#873b9bdb15a68ad736882508e20daf1d637ea612"
-  integrity sha512-V+11aRzh4S3hBrw6CS7QkG+Sn7imLHTcc5dFMpAVi+FazxHZFhP8ZNuupBbTQ5wPGE4g5WKrUkLP4pi7DvKZ6A==
+"@romainfieve/doubly-linked-list-navigator@^1.0.5":
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/@romainfieve/doubly-linked-list-navigator/-/doubly-linked-list-navigator-1.0.5.tgz#d34da48bb39c2b2acd066f8e5bbcb98e5a0f3831"
+  integrity sha512-UAAoV587syg/Usjit4lUh5LdTmY0PRRyQ7102Zv0Znz7jmrtf59dBrblTE8VnOhfpi1FbnKpP0z16QMCwWRpMA==
   dependencies:
     "@romainfieve/doubly-linked-list" "^3.1.1"
 

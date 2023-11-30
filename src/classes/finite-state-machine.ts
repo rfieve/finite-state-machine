@@ -9,10 +9,12 @@ import { Converters, MachineDefinition, Transitions } from '../types'
  * @template Data - The type of data meant to be stored through the FSM process.
  */
 export class FiniteStateMachine<States extends string, Data> {
-    private dllNav!      : DoublyLinkedListNavigator<{ data: Partial<Data>; state: States }>
+    private dllNav!      : DoublyLinkedListNavigator<{ data: Partial<Data>; state: States | 'end' }>
     private storedData!  : Partial<Data>
+    private initialData! : Partial<Data>
     private transitions! : Transitions<States, Data>
     private converters!  : Converters<States, Data>
+    private onEnd?       : (data: Partial<Data>) => void
 
     /**
      * Creates an instance of the FiniteStateMachine class.
@@ -22,16 +24,23 @@ export class FiniteStateMachine<States extends string, Data> {
      * @param {Transitions<States, Data>} machineDefinition.transitions - The transition functions between states.
      * @param {Converters<States, Data>} machineDefinition.converters - The conversion functions for input data at each state.
      */
-    constructor({
-        initialState,
-        initialData = {},
-        transitions,
-        converters,
-    }: MachineDefinition<States, Data>) {
-        this.dllNav = new DoublyLinkedListNavigator([{ data: initialData, state: initialState }])
+    constructor(
+        {
+            initialState,
+            initialData = {},
+            transitions,
+            converters,
+        }: MachineDefinition<States, Data>,
+        onEnd?: (data: Partial<Data>) => void
+    ) {
+        this.dllNav = new DoublyLinkedListNavigator([
+            { data: initialData, state: initialState as States | 'end' },
+        ])
         this.storedData = initialData
         this.transitions = transitions
         this.converters = converters
+        this.initialData = initialData
+        this.onEnd = onEnd
     }
 
     /**
@@ -47,7 +56,7 @@ export class FiniteStateMachine<States extends string, Data> {
      * @returns An array of nodes.
      */
     public get nodes() {
-        return this.dllNav.toArrayInOrder()
+        return this.dllNav.toArrayInOrder().filter((node) => node.state !== 'end')
     }
 
     /**
@@ -73,10 +82,25 @@ export class FiniteStateMachine<States extends string, Data> {
     public get asMachineDefinition() {
         return {
             initialData  : this.storedData,
-            initialState : this.dllNav.current?.data.state,
+            initialState : this.state,
             transitions  : this.transitions,
             converters   : this.converters,
         } as MachineDefinition<States, Data>
+    }
+
+    /**
+     * Sets the machine to the provided state.
+     * @param state - The targetted state
+     * @returns The updated state machine.
+     */
+    public readonly goTo = (state: States) => {
+        this.dllNav.goHead()
+
+        while (this.state !== state) {
+            this.dllNav.goNext()
+        }
+
+        return this
     }
 
     /**
@@ -97,11 +121,48 @@ export class FiniteStateMachine<States extends string, Data> {
      */
     private readonly transit = () => {
         const transition = this.transitions[this.state],
-              state = transition(this.storedData)
+              nextStateFromTransit = transition(this.storedData),
+              nextStateFromCurrent = this.current.next?.data?.state
 
-        if (state && state !== this.state) {
-            this.dllNav.insert({ data: {}, state }, () => 1, this.current)
+        // No next state from transition, we shut down the machine.
+        if (!nextStateFromTransit) {
+            this.dllNav.push({ data: {}, state: 'end' }).goNext()
+
+            this.onEnd?.(this.storedData)
+
+            return this
+        }
+
+        // We are at the tail.
+        if (!nextStateFromCurrent && nextStateFromTransit) {
+            // So we insert the next state as the new tail, and move to it:
+            this.dllNav.push({ data: {}, state: nextStateFromTransit }).goNext()
+
+            return this
+        }
+
+        // We are not at the tail.
+        // We cannot guarantee the next states are still relevant or valid.
+        if (nextStateFromCurrent && nextStateFromCurrent === nextStateFromTransit) {
+            // So we recursively transit to the next valid state.
             this.dllNav.goNext()
+            this.transit()
+
+            return this
+        }
+
+        // The next node's state is not valid.
+        if (nextStateFromCurrent && nextStateFromCurrent !== nextStateFromTransit) {
+            // So we cut it off.
+            this.current.next = undefined
+            this.dllNav.dll.tail = this.current
+
+            // And we reapply the data of each node from the head, from initial data
+            this.storedData = this.initialData
+            this.nodes.forEach((node) => this.storeData(node.data))
+            this.transit()
+
+            return this
         }
 
         return this
@@ -114,7 +175,7 @@ export class FiniteStateMachine<States extends string, Data> {
      * @returns The updated state machine.
      */
     private readonly storeData = (data: Partial<Data>) => {
-        this.storedData = Object.assign(this.storedData, data)
+        this.storedData = Object.assign({}, this.storedData, data)
         return this
     }
 
