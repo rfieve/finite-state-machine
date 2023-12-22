@@ -27,6 +27,20 @@ describe('FiniteStateMachine', () => {
             { data: {}, state: States.FirstName },
         ])
 
+        // Go back to 'Age' and answer the same answer
+        fsm.goTo(States.Age)
+        expect(fsm.state).toBe(States.Age)
+        fsm.set(18)
+        expect(fsm.state).toBe(States.FirstName)
+        expect(fsm.asMachineDefinition.initialState).toBe(States.FirstName)
+        expect(fsm.current.data).toEqual({ data: {}, state: States.FirstName })
+        expect(fsm.data).toEqual({ age: 18, isAllowed: true })
+        expect(fsm.asMachineDefinition.initialData).toEqual({ age: 18, isAllowed: true })
+        expect(fsm.nodes).toEqual([
+            { data: { age: 18, isAllowed: true }, state: States.Age },
+            { data: {}, state: States.FirstName },
+        ])
+
         // Answer 'John' to 'FirstName'
         fsm.set('John')
         expect(fsm.state).toBe(States.LastName)

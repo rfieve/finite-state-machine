@@ -94,10 +94,22 @@ export class FiniteStateMachine<States extends string, Data> {
      * @returns The updated state machine.
      */
     public readonly goTo = (state: States) => {
-        this.dllNav.goHead()
+        if (state !== this.state) {
+            // If we are at the tail without data, we cut the tail off
+            if (
+                this.dllNav.tail?.data.state === this.state &&
+                Object.values(this.current.data.data).length === 0
+            ) {
+                this.dllNav.goPrev()
+                this.current.next = undefined
+                this.dllNav.dll.tail = this.current
+            }
 
-        while (this.state !== state) {
-            this.dllNav.goNext()
+            this.dllNav.goHead()
+
+            while (this.state !== state) {
+                this.dllNav.goNext()
+            }
         }
 
         return this
@@ -122,7 +134,12 @@ export class FiniteStateMachine<States extends string, Data> {
     private readonly transit = () => {
         const transition = this.transitions[this.state],
               nextStateFromTransit = transition(this.storedData),
-              nextStateFromCurrent = this.current.next?.data?.state
+              nextStateFromCurrent =
+                this.current.next?.data?.state &&
+                this.current.next?.data?.data &&
+                Object.values(this.current.next.data.data).length > 0
+                    ? this.current.next?.data?.state
+                    : undefined
 
         // No next state from transition, we shut down the machine.
         if (!nextStateFromTransit) {
