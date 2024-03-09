@@ -739,17 +739,17 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@romainfieve/doubly-linked-list-navigator@^1.0.5":
-  version "1.0.5"
-  resolved "https://registry.yarnpkg.com/@romainfieve/doubly-linked-list-navigator/-/doubly-linked-list-navigator-1.0.5.tgz#d34da48bb39c2b2acd066f8e5bbcb98e5a0f3831"
-  integrity sha512-UAAoV587syg/Usjit4lUh5LdTmY0PRRyQ7102Zv0Znz7jmrtf59dBrblTE8VnOhfpi1FbnKpP0z16QMCwWRpMA==
+"@romainfieve/doubly-linked-list-navigator@^1.0.6":
+  version "1.0.6"
+  resolved "https://registry.yarnpkg.com/@romainfieve/doubly-linked-list-navigator/-/doubly-linked-list-navigator-1.0.6.tgz#9041e20540c1784211fe3afd34ce505b89d91c38"
+  integrity sha512-p1jnDq3nPF1yd+7hI9NOtqsv+/NJFHjCy/p/qLkb8WI5j617eY4DNiwwngvyvfQU2WDg4xckL/46oTk9Ma4wVA==
   dependencies:
-    "@romainfieve/doubly-linked-list" "^3.1.1"
+    "@romainfieve/doubly-linked-list" "^3.1.3"
 
-"@romainfieve/doubly-linked-list@^3.1.1":
-  version "3.1.2"
-  resolved "https://registry.yarnpkg.com/@romainfieve/doubly-linked-list/-/doubly-linked-list-3.1.2.tgz#ca4f826c3fc00f6bfebf97cf4ba6d85a425c5c95"
-  integrity sha512-XNSFrzy//BvrHFNok6LYh1lb5OtT27f3rhf0zZ/WsIEQKYbTn+uRWNm1ZeWr2QbPo/QMH9PedKDMtDrBuovYzg==
+"@romainfieve/doubly-linked-list@^3.1.3":
+  version "3.1.3"
+  resolved "https://registry.yarnpkg.com/@romainfieve/doubly-linked-list/-/doubly-linked-list-3.1.3.tgz#54815ef02e510878c17315c5789c82f1f611c00b"
+  integrity sha512-SgKsEZAuUhbs5Qja619NVlTUjKYFN5Lv2C+z2XMYJMnRIms5Jk9aW40w29beWcmFxRjb9BPE3676K9616T05/g==
 
 "@sinclair/typebox@^0.27.8":
   version "0.27.8"

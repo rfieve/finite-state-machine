@@ -93,9 +93,9 @@ export class FiniteStateMachine<States extends string, Data> {
      * @param state - The targetted state
      * @returns The updated state machine.
      */
-    public readonly goTo = (state: States) => {
+    public goTo(state: States) {
         if (state !== this.state) {
-            // If we are at the tail without data, we cut the tail off
+            // If we are at the tail without data, we cut the tail off.
             if (
                 this.dllNav.tail?.data.state === this.state &&
                 Object.values(this.current.data.data).length === 0
@@ -121,7 +121,7 @@ export class FiniteStateMachine<States extends string, Data> {
      * @param input - The inputted piece of data at the current state
      * @returns The updated state machine.
      */
-    public readonly set = <Input>(input: Input) => {
+    public set<Input>(input: Input) {
         const converted = this.converters[this.state](input, this.storedData)
         return this.setDataOnCurrent(converted).storeData(converted).transit()
     }
@@ -131,7 +131,7 @@ export class FiniteStateMachine<States extends string, Data> {
      * @private
      * @returns The updated state machine.
      */
-    private readonly transit = () => {
+    private transit() {
         const transition = this.transitions[this.state],
               nextStateFromTransit = transition(this.storedData),
               nextStateFromCurrent =
@@ -174,7 +174,7 @@ export class FiniteStateMachine<States extends string, Data> {
             this.current.next = undefined
             this.dllNav.dll.tail = this.current
 
-            // And we reapply the data of each node from the head, from initial data
+            // And we reapply the data of each node from the head, from initial data.
             this.storedData = this.initialData
             this.nodes.forEach((node) => this.storeData(node.data))
             this.transit()
@@ -191,7 +191,7 @@ export class FiniteStateMachine<States extends string, Data> {
      * @param data - The data to be set.
      * @returns The updated state machine.
      */
-    private readonly storeData = (data: Partial<Data>) => {
+    private storeData(data: Partial<Data>) {
         this.storedData = Object.assign({}, this.storedData, data)
         return this
     }
@@ -202,7 +202,7 @@ export class FiniteStateMachine<States extends string, Data> {
      * @param data - The data to be set.
      * @returns The updated state machine.
      */
-    private readonly setDataOnCurrent = (data: Partial<Data>) => {
+    private setDataOnCurrent(data: Partial<Data>) {
         this.current.data.data = data
         return this
     }
