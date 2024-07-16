@@ -4,10 +4,10 @@ A TypeScript library to work with finite state machines.
 
 ## Table of Content
 
--   [✌️🔗🧭 finite-state-machine](#️-finite-state-machine)
-    -   [Table of Content](#table-of-content)
-    -   [Installation](#installation)
-    -   [Usage](#usage)
+- [✌️🔗🧭 finite-state-machine](#️-finite-state-machine)
+  - [Table of Content](#table-of-content)
+  - [Installation](#installation)
+  - [Usage](#usage)
 
 ## Installation
 
@@ -54,15 +54,39 @@ const converters: Converters<States, Data> = {
     lastName: (lastName: string, _data) => ({ lastName }),
 }
 
+const effects: Effects<States, Data> = {
+    age: (data) => console.log(data.age),
+    firstName: (data) => console.log(data.firstName),
+}
+
+const runners: Runners<States, Data> = {
+    age: (_data) => 18,
+    isAllowed: (_data) => new Promise((resolve) => resolve(true)),
+    firstName: (_data) => new Promise((resolve) => resolve('John')),
+    lastName: (_data) => new Promise((resolve) => resolve('Doe')),
+}
+
+// Without runners
 const fsm = new FiniteStateMachine({
     initialState: States.Age,
     initialData: {},
     transitions,
     converters,
+    effects,
 })
     .set(18)
     .set('John')
     .set('Doe')
+
+// With runners
+const fsm = await new FiniteStateMachine({
+    initialState: States.Age,
+    initialData: {},
+    transitions,
+    converters,
+    effects,
+    runners,
+}).run()
 
 const state = fsm.state // 'lastName'
 const data = fsm.data // { lastName: 'Doe', firstName: 'John', age: 18, isAllowed: true }

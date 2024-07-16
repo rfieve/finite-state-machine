@@ -1,7 +1,7 @@
 import { DLLNode } from '@romainfieve/doubly-linked-list'
 import { DoublyLinkedListNavigator } from '@romainfieve/doubly-linked-list-navigator'
 
-import { Converters, MachineDefinition, Transitions } from '../types'
+import { Converters, Effects, MachineDefinition, Runners, Transitions } from '../types'
 
 /**
  * Represents a finite state machine.
@@ -14,6 +14,8 @@ export class FiniteStateMachine<States extends string, Data> {
     private initialData! : Partial<Data>
     private transitions! : Transitions<States, Data>
     private converters!  : Converters<States, Data>
+    private effects?     : Effects<States, Data>
+    private runners?     : Runners<States, Data>
     private onEnd?       : (data: Partial<Data>) => void
 
     /**
@@ -30,6 +32,8 @@ export class FiniteStateMachine<States extends string, Data> {
             initialData = {},
             transitions,
             converters,
+            effects,
+            runners,
         }: MachineDefinition<States, Data>,
         onEnd?: (data: Partial<Data>) => void
     ) {
@@ -37,9 +41,11 @@ export class FiniteStateMachine<States extends string, Data> {
             { data: initialData, state: initialState as States | 'end' },
         ])
         this.storedData = initialData
+        this.initialData = initialData
         this.transitions = transitions
         this.converters = converters
-        this.initialData = initialData
+        this.effects = effects
+        this.runners = runners
         this.onEnd = onEnd
     }
 
@@ -85,6 +91,8 @@ export class FiniteStateMachine<States extends string, Data> {
             initialState : this.state,
             transitions  : this.transitions,
             converters   : this.converters,
+            effects      : this.effects,
+            runners      : this.runners,
         } as MachineDefinition<States, Data>
     }
 
@@ -123,7 +131,35 @@ export class FiniteStateMachine<States extends string, Data> {
      */
     public set<Input>(input: Input) {
         const converted = this.converters[this.state](input, this.storedData)
-        return this.setDataOnCurrent(converted).storeData(converted).transit()
+
+        return this.setDataOnCurrent(converted).storeData(converted).triggerEffect().transit()
+    }
+
+    /**
+     * Based on the input, sets stores the data based on the current state converter, then transits
+     * to the new state depending on the current state transition and newly stored data.
+     * @param input - The inputted piece of data at the current state
+     * @returns The updated state machine.
+     */
+    public async run() {
+        const runner = this.runners?.[this.state]
+
+        if (runner) {
+            const input = await runner(this.storedData)
+            await this.set(input).run()
+        }
+
+        return this
+    }
+
+    /**
+     * Triggers the effect linked to the current state (if any) with the stored data.
+     * @private
+     * @returns The state machine.
+     */
+    private triggerEffect() {
+        this.effects?.[this.state]?.(this.storedData)
+        return this
     }
 
     /**

@@ -1,5 +1,5 @@
 import { FiniteStateMachine } from '../classes/finite-state-machine'
-import { Converters, Transitions } from '../types'
+import { Converters, Effects, Runners, Transitions } from '../types'
 
 export enum States {
     Age = 'age',
@@ -14,7 +14,6 @@ type Data = {
     isAllowed? : boolean;
     lastName?  : string;
 }
-
 function isAdult(age?: number) {
     return !!age && age >= 18
 }
@@ -33,11 +32,28 @@ const converters: Converters<States, Data> = {
     lastName  : (lastName: string, _data) => ({ lastName }),
 }
 
-export function makeMockedFSM() {
+const runners: Runners<States, Data> = {
+    age       : (_data) => 18,
+    isAllowed : (_data) => new Promise((resolve) => resolve(true)),
+    firstName : (_data) => new Promise((resolve) => resolve('John')),
+    lastName  : (_data) => new Promise((resolve) => resolve('Doe')),
+}
+
+export const mockedAgeEffect = jest.fn()
+export const mockedFirstNameEffect = jest.fn()
+
+const effects: Effects<States, Data> = {
+    age       : mockedAgeEffect,
+    firstName : mockedFirstNameEffect,
+}
+
+export function makeMockedFSM(withRunners?: boolean) {
     return new FiniteStateMachine({
+        runners      : withRunners ? runners : undefined,
         initialState : States.Age,
         initialData  : {},
         transitions,
         converters,
+        effects,
     })
 }

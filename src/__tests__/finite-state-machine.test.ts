@@ -1,13 +1,9 @@
-import { makeMockedFSM, States } from './_mocks'
+import { makeMockedFSM, mockedAgeEffect, mockedFirstNameEffect, States } from './_mocks'
 
 describe('FiniteStateMachine', () => {
-    let fsm = makeMockedFSM()
+    it('should transit correctly without runners', () => {
+        const fsm = makeMockedFSM()
 
-    beforeEach(() => {
-        fsm = makeMockedFSM()
-    })
-
-    it('should transit correctly', () => {
         expect(fsm.state).toBe(States.Age)
         expect(fsm.asMachineDefinition.initialState).toBe(States.Age)
         expect(fsm.current.data).toEqual({ data: {}, state: States.Age })
@@ -26,6 +22,7 @@ describe('FiniteStateMachine', () => {
             { data: { age: 18, isAllowed: true }, state: States.Age },
             { data: {}, state: States.FirstName },
         ])
+        expect(mockedAgeEffect).toHaveBeenCalledWith({ age: 18, isAllowed: true })
 
         // Go back to 'Age' and answer the same answer
         fsm.goTo(States.Age)
@@ -57,6 +54,11 @@ describe('FiniteStateMachine', () => {
             { data: { firstName: 'John' }, state: States.FirstName },
             { data: {}, state: States.LastName },
         ])
+        expect(mockedFirstNameEffect).toHaveBeenCalledWith({
+            firstName : 'John',
+            age       : 18,
+            isAllowed : true,
+        })
 
         // Answer 'Doe' to 'LastName'
         fsm.set('Doe')
@@ -158,6 +160,24 @@ describe('FiniteStateMachine', () => {
         expect(fsm.nodes).toEqual([
             { data: { age: 10, isAllowed: false }, state: States.Age },
             { data: { isAllowed: false }, state: States.IsAllowed },
+        ])
+    })
+
+    it('should transit correctly with runners', async () => {
+        const fsm = await makeMockedFSM(true).run()
+
+        expect(fsm.state).toBe('end')
+
+        expect(fsm.data).toEqual({
+            lastName  : 'Doe',
+            firstName : 'John',
+            age       : 18,
+            isAllowed : true,
+        })
+        expect(fsm.nodes).toEqual([
+            { data: { age: 18, isAllowed: true }, state: States.Age },
+            { data: { firstName: 'John' }, state: States.FirstName },
+            { data: { lastName: 'Doe' }, state: States.LastName },
         ])
     })
 })
