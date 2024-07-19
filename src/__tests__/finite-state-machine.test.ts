@@ -1,7 +1,7 @@
 import { makeMockedFSM, mockedAgeEffect, mockedFirstNameEffect, States } from './_mocks'
 
 describe('FiniteStateMachine', () => {
-    it('should transit correctly without runners', () => {
+    it('should transit correctly with setters', () => {
         const fsm = makeMockedFSM()
 
         expect(fsm.state).toBe(States.Age)

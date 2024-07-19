@@ -1,7 +1,7 @@
 import { DLLNode } from '@romainfieve/doubly-linked-list'
 import { DoublyLinkedListNavigator } from '@romainfieve/doubly-linked-list-navigator'
 
-import { Converters, Effects, MachineDefinition, Runners, Transitions } from '../types'
+import { Setters, Effects, MachineDefinition, Runners, Transitions } from '../types'
 
 /**
  * Represents a finite state machine.
@@ -13,7 +13,7 @@ export class FiniteStateMachine<States extends string, Data> {
     private storedData!  : Partial<Data>
     private initialData! : Partial<Data>
     private transitions! : Transitions<States, Data>
-    private converters!  : Converters<States, Data>
+    private setters?     : Setters<States, Data>
     private effects?     : Effects<States, Data>
     private runners?     : Runners<States, Data>
     private onEnd?       : (data: Partial<Data>) => void
@@ -24,14 +24,14 @@ export class FiniteStateMachine<States extends string, Data> {
      * @param {States} machineDefinition.initialState - The initial state of the state machine.
      * @param {Partial<Data>} [machineDefinition.initialData={}] - The initial machine data.
      * @param {Transitions<States, Data>} machineDefinition.transitions - The transition functions between states.
-     * @param {Converters<States, Data>} machineDefinition.converters - The conversion functions for input data at each state.
+     * @param {Setters<States, Data>} machineDefinition.setters - The conversion functions for input data at each state.
      */
     constructor(
         {
             initialState,
             initialData = {},
             transitions,
-            converters,
+            setters,
             effects,
             runners,
         }: MachineDefinition<States, Data>,
@@ -43,7 +43,7 @@ export class FiniteStateMachine<States extends string, Data> {
         this.storedData = initialData
         this.initialData = initialData
         this.transitions = transitions
-        this.converters = converters
+        this.setters = setters
         this.effects = effects
         this.runners = runners
         this.onEnd = onEnd
@@ -90,7 +90,7 @@ export class FiniteStateMachine<States extends string, Data> {
             initialData  : this.storedData,
             initialState : this.state,
             transitions  : this.transitions,
-            converters   : this.converters,
+            setters      : this.setters,
             effects      : this.effects,
             runners      : this.runners,
         } as MachineDefinition<States, Data>
@@ -130,9 +130,14 @@ export class FiniteStateMachine<States extends string, Data> {
      * @returns The updated state machine.
      */
     public set<Input>(input: Input) {
-        const converted = this.converters[this.state](input, this.storedData)
+        const converter = this.setters?.[this.state]
 
-        return this.setDataOnCurrent(converted).storeData(converted).triggerEffect().transit()
+        if (converter) {
+            const data = converter(input, this.storedData)
+            return this.setDataOnCurrent(data).storeData(data).triggerEffect().transit()
+        }
+
+        return this
     }
 
     /**
@@ -145,8 +150,8 @@ export class FiniteStateMachine<States extends string, Data> {
         const runner = this.runners?.[this.state]
 
         if (runner) {
-            const input = await runner(this.storedData)
-            await this.set(input).run()
+            const data = await runner(this.storedData)
+            await this.setDataOnCurrent(data).storeData(data).triggerEffect().transit().run()
         }
 
         return this

@@ -4,10 +4,10 @@ A TypeScript library to work with finite state machines.
 
 ## Table of Content
 
-- [✌️🔗🧭 finite-state-machine](#️-finite-state-machine)
-  - [Table of Content](#table-of-content)
-  - [Installation](#installation)
-  - [Usage](#usage)
+-   [✌️🔗🧭 finite-state-machine](#️-finite-state-machine)
+    -   [Table of Content](#table-of-content)
+    -   [Installation](#installation)
+    -   [Usage](#usage)
 
 ## Installation
 
@@ -47,46 +47,37 @@ const transitions: Transitions<States, Data> = {
     lastName: (_data) => undefined,
 }
 
-const converters: Converters<States, Data> = {
+const effects: Effects<States, Data> = {
+    age: (data) => console.log(data.age),
+    firstName: (data) => console.log(data.firstName),
+}
+
+const setters: Setters<States, Data> = {
     age: (age: number, _data) => ({ isAllowed: isAdult(age), age }),
     isAllowed: (isAllowed: boolean, _data) => ({ isAllowed }),
     firstName: (firstName: string, _data) => ({ firstName }),
     lastName: (lastName: string, _data) => ({ lastName }),
 }
 
-const effects: Effects<States, Data> = {
-    age: (data) => console.log(data.age),
-    firstName: (data) => console.log(data.firstName),
-}
-
 const runners: Runners<States, Data> = {
-    age: (_data) => 18,
-    isAllowed: (_data) => new Promise((resolve) => resolve(true)),
-    firstName: (_data) => new Promise((resolve) => resolve('John')),
-    lastName: (_data) => new Promise((resolve) => resolve('Doe')),
+    age: (_data) => ({ isAllowed: isAdult(18), age: 18 }),
+    isAllowed: (_data) => new Promise((resolve) => resolve({ isAllowed: true })),
+    firstName: (_data) => new Promise((resolve) => resolve({ firstName: 'John' })),
+    lastName: (_data) => new Promise((resolve) => resolve({ lastName: 'Doe' })),
 }
 
-// Without runners
-const fsm = new FiniteStateMachine({
+const baseMachineDef = {
     initialState: States.Age,
     initialData: {},
     transitions,
-    converters,
     effects,
-})
-    .set(18)
-    .set('John')
-    .set('Doe')
+}
+
+// With setters
+const fsm = new FiniteStateMachine({ ...baseMachineDef, setters }).set(18).set('John').set('Doe')
 
 // With runners
-const fsm = await new FiniteStateMachine({
-    initialState: States.Age,
-    initialData: {},
-    transitions,
-    converters,
-    effects,
-    runners,
-}).run()
+const fsm = await new FiniteStateMachine({ ...baseMachineDef, runners }).run()
 
 const state = fsm.state // 'lastName'
 const data = fsm.data // { lastName: 'Doe', firstName: 'John', age: 18, isAllowed: true }

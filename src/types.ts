@@ -3,7 +3,7 @@ export type Transitions<States extends string, Data> = Record<
     (data: Partial<Data>) => States | undefined
 >
 
-export type Converters<States extends string, Data> = Record<
+export type Setters<States extends string, Data> = Record<
     States,
     // @TODO: add type safety any should be the input type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,19 +15,14 @@ export type Effects<States extends string, Data> = Partial<
 >
 
 export type Runners<States extends string, Data> = Partial<
-    Record<
-        States,
-        // @TODO: add type safety any should be the input type
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (data: Partial<Data>) => Promise<any> | any
-    >
+    Record<States, (data: Partial<Data>) => Partial<Data> | Promise<Partial<Data>>>
 >
 
 export type MachineDefinition<States extends string, Data> = {
-    converters   : Converters<States, Data>;
     effects?     : Effects<States, Data>;
     initialData  : Partial<Data>;
     initialState : States;
     runners?     : Runners<States, Data>;
+    setters?     : Setters<States, Data>;
     transitions  : Transitions<States, Data>;
 }
