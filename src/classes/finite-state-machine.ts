@@ -8,14 +8,15 @@ import { Setters, Effects, MachineDefinition, Runners, Transitions } from '../ty
  * @template States - The enum representing the possible states of the machine.
  * @template Data - The type of data meant to be stored through the FSM process.
  */
-export class FiniteStateMachine<States extends string, Data> {
+export class FiniteStateMachine<States extends string, Data, Context extends object> {
     private dllNav!      : DoublyLinkedListNavigator<{ data: Partial<Data>; state: States | 'end' }>
     private storedData!  : Partial<Data>
     private initialData! : Partial<Data>
-    private transitions! : Transitions<States, Data>
-    private setters?     : Setters<States, Data>
-    private effects?     : Effects<States, Data>
-    private runners?     : Runners<States, Data>
+    private context!     : Context
+    private transitions! : Transitions<States, Data, Context>
+    private setters?     : Setters<States, Data, Context>
+    private effects?     : Effects<States, Data, Context>
+    private runners?     : Runners<States, Data, Context>
     private onEnd?       : (data: Partial<Data>) => void
 
     /**
@@ -23,8 +24,11 @@ export class FiniteStateMachine<States extends string, Data> {
      * @param {MachineDefinition<States, Data>} machineDefinition - The definition of the state machine.
      * @param {States} machineDefinition.initialState - The initial state of the state machine.
      * @param {Partial<Data>} [machineDefinition.initialData={}] - The initial machine data.
-     * @param {Transitions<States, Data>} machineDefinition.transitions - The transition functions between states.
-     * @param {Setters<States, Data>} machineDefinition.setters - The conversion functions for input data at each state.
+     * @param {Context} [machineDefinition.context={}] - The machine context.
+     * @param {Transitions<States, Data, Context>} machineDefinition.transitions - The transition functions between states.
+     * @param {Setters<States, Data, Context>} machineDefinition.setters - The conversion functions for input data at each state.
+     * @param {Runners<States, Data>} machineDefinition.runners - The runners for each state.
+     * @param {Effects<States, Data>} machineDefinition.effects - The side effects to trigger at each state.
      */
     constructor(
         {
@@ -34,7 +38,8 @@ export class FiniteStateMachine<States extends string, Data> {
             setters,
             effects,
             runners,
-        }: MachineDefinition<States, Data>,
+            context = {} as Context,
+        }: MachineDefinition<States, Data, Context>,
         onEnd?: (data: Partial<Data>) => void
     ) {
         this.dllNav = new DoublyLinkedListNavigator([
@@ -46,6 +51,7 @@ export class FiniteStateMachine<States extends string, Data> {
         this.setters = setters
         this.effects = effects
         this.runners = runners
+        this.context = context
         this.onEnd = onEnd
     }
 
@@ -93,7 +99,8 @@ export class FiniteStateMachine<States extends string, Data> {
             setters      : this.setters,
             effects      : this.effects,
             runners      : this.runners,
-        } as MachineDefinition<States, Data>
+            context      : this.context,
+        } as MachineDefinition<States, Data, Context>
     }
 
     /**
@@ -133,7 +140,7 @@ export class FiniteStateMachine<States extends string, Data> {
         const converter = this.setters?.[this.state]
 
         if (converter) {
-            const data = converter(input, this.storedData)
+            const data = converter(input, this.storedData, this.context)
             return this.setDataOnCurrent(data).storeData(data).triggerEffect().transit()
         }
 
@@ -141,16 +148,14 @@ export class FiniteStateMachine<States extends string, Data> {
     }
 
     /**
-     * Based on the input, sets stores the data based on the current state converter, then transits
-     * to the new state depending on the current state transition and newly stored data.
-     * @param input - The inputted piece of data at the current state
+     * Runs the machine through the provided runners and stops at the first state without runner.
      * @returns The updated state machine.
      */
     public async run() {
         const runner = this.runners?.[this.state]
 
         if (runner) {
-            const data = await runner(this.storedData)
+            const data = await runner(this.storedData, this.context)
             await this.setDataOnCurrent(data).storeData(data).triggerEffect().transit().run()
         }
 
@@ -163,7 +168,12 @@ export class FiniteStateMachine<States extends string, Data> {
      * @returns The state machine.
      */
     private triggerEffect() {
-        this.effects?.[this.state]?.(this.storedData)
+        const effect = this.effects?.[this.state]
+
+        if (effect) {
+            effect(this.storedData, this.context)
+        }
+
         return this
     }
 
@@ -174,7 +184,7 @@ export class FiniteStateMachine<States extends string, Data> {
      */
     private transit() {
         const transition = this.transitions[this.state],
-              nextStateFromTransit = transition(this.storedData),
+              nextStateFromTransit = transition(this.storedData, this.context),
               nextStateFromCurrent =
                 this.current.next?.data?.state &&
                 this.current.next?.data?.data &&

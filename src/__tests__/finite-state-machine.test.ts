@@ -22,7 +22,7 @@ describe('FiniteStateMachine', () => {
             { data: { age: 18, isAllowed: true }, state: States.Age },
             { data: {}, state: States.FirstName },
         ])
-        expect(mockedAgeEffect).toHaveBeenCalledWith({ age: 18, isAllowed: true })
+        expect(mockedAgeEffect).toHaveBeenCalledWith({ age: 18, isAllowed: true }, { legalAge: 18 })
 
         // Go back to 'Age' and answer the same answer
         fsm.goTo(States.Age)
@@ -54,11 +54,14 @@ describe('FiniteStateMachine', () => {
             { data: { firstName: 'John' }, state: States.FirstName },
             { data: {}, state: States.LastName },
         ])
-        expect(mockedFirstNameEffect).toHaveBeenCalledWith({
-            firstName : 'John',
-            age       : 18,
-            isAllowed : true,
-        })
+        expect(mockedFirstNameEffect).toHaveBeenCalledWith(
+            {
+                firstName : 'John',
+                age       : 18,
+                isAllowed : true,
+            },
+            { legalAge: 18 }
+        )
 
         // Answer 'Doe' to 'LastName'
         fsm.set('Doe')
