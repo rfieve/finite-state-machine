@@ -1,6 +1,6 @@
 {
     "name": "@romainfieve/finite-state-machine",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
@@ -32,7 +32,7 @@
         "url": "https://github.com/rfieve/finite-state-machine/issues"
     },
     "dependencies": {
-        "@romainfieve/doubly-linked-list-navigator": "^1.0.6"
+        "@romainfieve/doubly-linked-list-navigator": "^1.0.7"
     },
     "devDependencies": {
         "@jest/types": "^29.6.3",
