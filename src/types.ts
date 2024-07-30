@@ -1,25 +1,33 @@
-export type Transitions<States extends string, Data, Context> = Record<
+import { FiniteStateMachine } from './classes/finite-state-machine'
+
+export type Transitions<States extends string, Data, Context extends object> = Record<
     States,
-    (data: Partial<Data>, context: Context) => States | undefined
+    (machine: FiniteStateMachine<States, Data, Context>) => States | undefined
 >
 
-export type Setters<States extends string, Data, Context> = Record<
+export type Setters<States extends string, Data, Context extends object> = Record<
     States,
     // @TODO: add type safety any should be the input type
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (input: any, data: Partial<Data>, context: Context) => Partial<Data>
+    (input: any, machine: FiniteStateMachine<States, Data, Context>) => Partial<Data>
 >
 
-export type Effects<States extends string, Data, Context> = Partial<
-    Record<States, (data: Partial<Data>, context: Context) => Promise<void> | void>
+export type Effects<States extends string, Data, Context extends object> = Partial<
+    Record<States, (machine: FiniteStateMachine<States, Data, Context>) => Promise<void> | void>
 >
 
-export type Runners<States extends string, Data, Context> = Partial<
+export type Runners<States extends string, Data, Context extends object> = Partial<
     Record<
         States,
-        (data: Partial<Data>, context: Context) => Partial<Data> | Promise<Partial<Data>>
+        (
+            machine: FiniteStateMachine<States, Data, Context>
+        ) => Partial<Data> | Promise<Partial<Data>>
     >
 >
+
+export type OnEnd<States extends string, Data, Context extends object> = (
+    machine: FiniteStateMachine<States, Data, Context>
+) => void
 
 export type MachineDefinition<States extends string, Data, Context extends object> = {
     context?     : Context;

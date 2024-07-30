@@ -1,34 +1,51 @@
 import { DLLNode } from '@romainfieve/doubly-linked-list'
 import { DoublyLinkedListNavigator } from '@romainfieve/doubly-linked-list-navigator'
 
-import { Setters, Effects, MachineDefinition, Runners, Transitions } from '../types'
+import { Setters, Effects, MachineDefinition, Runners, Transitions, OnEnd } from '../types'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NotFunction<T> = T extends (...args: any[]) => any ? never : T
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type FirstArg<T> = T extends (a: infer U, ...arg: any[]) => any ? U : never
+
+// type SetFuncArg<States extends string, Data, Context extends object, Arg> =
+
+function isSetFuncArg<States extends string, Data, Context extends object, Arg>(
+    arg: NotFunction<Arg> | ((machine: FiniteStateMachine<States, Data, Context>) => Arg)
+): arg is (machine: FiniteStateMachine<States, Data, Context>) => Arg {
+    return typeof arg === 'function'
+}
 
 /**
  * Represents a finite state machine.
  * @template States - The enum representing the possible states of the machine.
  * @template Data - The type of data meant to be stored through the FSM process.
+ * @template Context - The machine context.
  */
 export class FiniteStateMachine<States extends string, Data, Context extends object> {
+    public context!      : Context
+    public data!         : Partial<Data>
     private dllNav!      : DoublyLinkedListNavigator<{ data: Partial<Data>; state: States | 'end' }>
-    private storedData!  : Partial<Data>
     private initialData! : Partial<Data>
-    private context!     : Context
     private transitions! : Transitions<States, Data, Context>
     private setters?     : Setters<States, Data, Context>
     private effects?     : Effects<States, Data, Context>
     private runners?     : Runners<States, Data, Context>
-    private onEnd?       : (data: Partial<Data>) => void
+    private onEnd?       : OnEnd<States, Data, Context>
+    private isImmutable? : boolean
 
     /**
      * Creates an instance of the FiniteStateMachine class.
-     * @param {MachineDefinition<States, Data>} machineDefinition - The definition of the state machine.
+     * @param {MachineDefinition<States, Data, Context>} machineDefinition - The definition of the state machine.
      * @param {States} machineDefinition.initialState - The initial state of the state machine.
      * @param {Partial<Data>} [machineDefinition.initialData={}] - The initial machine data.
      * @param {Context} [machineDefinition.context={}] - The machine context.
      * @param {Transitions<States, Data, Context>} machineDefinition.transitions - The transition functions between states.
      * @param {Setters<States, Data, Context>} machineDefinition.setters - The conversion functions for input data at each state.
-     * @param {Runners<States, Data>} machineDefinition.runners - The runners for each state.
-     * @param {Effects<States, Data>} machineDefinition.effects - The side effects to trigger at each state.
+     * @param {Runners<States, Data, Context>} machineDefinition.runners - The runners for each state.
+     * @param {Effects<States, Data, Context>} machineDefinition.effects - The side effects to trigger at each state.
+     * @param onEnd - The side effect to trigger when the machine reaches the end.
+     * @param isImmutable - Should the machine return a new instance at every state change.
      */
     constructor(
         {
@@ -40,12 +57,13 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
             runners,
             context = {} as Context,
         }: MachineDefinition<States, Data, Context>,
-        onEnd?: (data: Partial<Data>) => void
+        onEnd?: OnEnd<States, Data, Context>,
+        isImmutable?: boolean
     ) {
         this.dllNav = new DoublyLinkedListNavigator([
             { data: initialData, state: initialState as States | 'end' },
         ])
-        this.storedData = initialData
+        this.data = initialData
         this.initialData = initialData
         this.transitions = transitions
         this.setters = setters
@@ -53,6 +71,7 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
         this.runners = runners
         this.context = context
         this.onEnd = onEnd
+        this.isImmutable = isImmutable
     }
 
     /**
@@ -80,20 +99,12 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
     }
 
     /**
-     * Gets the stored data associated with the current state.
-     * @returns The stored data.
-     */
-    public get data() {
-        return this.storedData
-    }
-
-    /**
      * Gets a machine defintion out the current state of the machine.
      * @returns The state machine definition.
      */
     public get asMachineDefinition() {
         return {
-            initialData  : this.storedData,
+            initialData  : this.data,
             initialState : this.state,
             transitions  : this.transitions,
             setters      : this.setters,
@@ -127,24 +138,27 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
             }
         }
 
-        return this
+        return this.instance()
     }
 
     /**
      * Based on the input, sets stores the data based on the current state converter, then transits
      * to the new state depending on the current state transition and newly stored data.
-     * @param input - The inputted piece of data at the current state
+     * @param input - The inputted piece of data at the current state or a function to resolve it
      * @returns The updated state machine.
      */
-    public set<Input>(input: Input) {
-        const converter = this.setters?.[this.state]
+    public set<Arg extends FirstArg<Setters<States, Data, Context>[States]>>(
+        arg: NotFunction<Arg> | ((machine: FiniteStateMachine<States, Data, Context>) => Arg)
+    ) {
+        const setter = this.setters?.[this.state]
+        const input = isSetFuncArg(arg) ? arg(this) : arg
 
-        if (converter) {
-            const data = converter(input, this.storedData, this.context)
+        if (setter) {
+            const data = setter(input, this)
             return this.setDataOnCurrent(data).storeData(data).triggerEffect().transit()
         }
 
-        return this
+        return this.instance()
     }
 
     /**
@@ -155,11 +169,11 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
         const runner = this.runners?.[this.state]
 
         if (runner) {
-            const data = await runner(this.storedData, this.context)
+            const data = await runner(this)
             await this.setDataOnCurrent(data).storeData(data).triggerEffect().transit().run()
         }
 
-        return this
+        return this.instance()
     }
 
     /**
@@ -171,10 +185,10 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
         const effect = this.effects?.[this.state]
 
         if (effect) {
-            effect(this.storedData, this.context)
+            effect(this)
         }
 
-        return this
+        return this.instance()
     }
 
     /**
@@ -184,7 +198,7 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
      */
     private transit() {
         const transition = this.transitions[this.state],
-              nextStateFromTransit = transition(this.storedData, this.context),
+              nextStateFromTransit = transition(this),
               nextStateFromCurrent =
                 this.current.next?.data?.state &&
                 this.current.next?.data?.data &&
@@ -196,9 +210,9 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
         if (!nextStateFromTransit) {
             this.dllNav.push({ data: {}, state: 'end' }).goNext()
 
-            this.onEnd?.(this.storedData)
+            this.onEnd?.(this)
 
-            return this
+            return this.instance()
         }
 
         // We are at the tail.
@@ -206,7 +220,7 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
             // So we insert the next state as the new tail, and move to it:
             this.dllNav.push({ data: {}, state: nextStateFromTransit }).goNext()
 
-            return this
+            return this.instance()
         }
 
         // We are not at the tail.
@@ -216,7 +230,7 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
             this.dllNav.goNext()
             this.transit()
 
-            return this
+            return this.instance()
         }
 
         // The next node's state is not valid.
@@ -226,14 +240,14 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
             this.dllNav.dll.tail = this.current
 
             // And we reapply the data of each node from the head, from initial data.
-            this.storedData = this.initialData
+            this.data = this.initialData
             this.nodes.forEach((node) => this.storeData(node.data))
             this.transit()
 
-            return this
+            return this.instance()
         }
 
-        return this
+        return this.instance()
     }
 
     /**
@@ -243,8 +257,8 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
      * @returns The updated state machine.
      */
     private storeData(data: Partial<Data>) {
-        this.storedData = Object.assign({}, this.storedData, data)
-        return this
+        this.data = Object.assign({}, this.data, data)
+        return this.instance()
     }
 
     /**
@@ -255,6 +269,12 @@ export class FiniteStateMachine<States extends string, Data, Context extends obj
      */
     private setDataOnCurrent(data: Partial<Data>) {
         this.current.data.data = data
-        return this
+        return this.instance()
+    }
+
+    private instance() {
+        return this.isImmutable
+            ? new FiniteStateMachine(this.asMachineDefinition, this.onEnd, this.isImmutable)
+            : this
     }
 }

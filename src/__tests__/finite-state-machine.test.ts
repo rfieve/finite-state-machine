@@ -1,6 +1,22 @@
-import { makeMockedFSM, mockedAgeEffect, mockedFirstNameEffect, States } from './_mocks'
+import {
+    makeMockedFSM,
+    mockedAgeEffect,
+    mockedFirstNameEffect,
+    mockedOnEnd,
+    States,
+} from './_mocks'
 
 describe('FiniteStateMachine', () => {
+    it('should trigger onEnd correctly', async () => {
+        const fsm = makeMockedFSM(true)
+
+        expect(mockedOnEnd).not.toHaveBeenCalled()
+
+        await fsm.run()
+
+        expect(mockedOnEnd).toHaveBeenCalledWith(fsm)
+    })
+
     it('should transit correctly with setters', () => {
         const fsm = makeMockedFSM()
 
@@ -22,7 +38,7 @@ describe('FiniteStateMachine', () => {
             { data: { age: 18, isAllowed: true }, state: States.Age },
             { data: {}, state: States.FirstName },
         ])
-        expect(mockedAgeEffect).toHaveBeenCalledWith({ age: 18, isAllowed: true }, { legalAge: 18 })
+        expect(mockedAgeEffect).toHaveBeenCalledWith(fsm)
 
         // Go back to 'Age' and answer the same answer
         fsm.goTo(States.Age)
@@ -54,14 +70,7 @@ describe('FiniteStateMachine', () => {
             { data: { firstName: 'John' }, state: States.FirstName },
             { data: {}, state: States.LastName },
         ])
-        expect(mockedFirstNameEffect).toHaveBeenCalledWith(
-            {
-                firstName : 'John',
-                age       : 18,
-                isAllowed : true,
-            },
-            { legalAge: 18 }
-        )
+        expect(mockedFirstNameEffect).toHaveBeenCalledWith(fsm)
 
         // Answer 'Doe' to 'LastName'
         fsm.set('Doe')
@@ -151,7 +160,7 @@ describe('FiniteStateMachine', () => {
         ])
 
         // Answer 'false' to 'IsAllowed' instead
-        fsm.set(false)
+        fsm.set(({ data: { age } }) => (age || 0) > 18)
         expect(fsm.state).toBe('end')
         expect(fsm.asMachineDefinition.initialState).toBe('end')
         expect(fsm.current.data).toEqual({ data: {}, state: 'end' })
@@ -171,16 +180,23 @@ describe('FiniteStateMachine', () => {
 
         expect(fsm.state).toBe('end')
 
-        expect(fsm.data).toEqual({
-            lastName  : 'Doe',
-            firstName : 'John',
-            age       : 18,
-            isAllowed : true,
-        })
+        expect(fsm.data).toEqual({ lastName: 'Doe', firstName: 'John', age: 18, isAllowed: true })
         expect(fsm.nodes).toEqual([
             { data: { age: 18, isAllowed: true }, state: States.Age },
             { data: { firstName: 'John' }, state: States.FirstName },
             { data: { lastName: 'Doe' }, state: States.LastName },
         ])
+    })
+
+    it('should not be immutable by default', async () => {
+        const fsm = makeMockedFSM(true, false)
+
+        expect((await fsm.run()) === fsm).toBe(true)
+    })
+
+    it('should be immutable when specified so', async () => {
+        const fsm = makeMockedFSM(true, true)
+
+        expect((await fsm.run()) === fsm).toBe(false)
     })
 })
